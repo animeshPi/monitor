@@ -1,0 +1,77 @@
+use eframe::egui;
+use regex::Regex;
+use std::process::Command;
+use tokio::time::Duration;
+
+struct SensorApp {
+    data: String,
+}
+
+impl Default for SensorApp {
+    fn default() -> Self {
+        Self {
+            data: String::from("Fetching sensor data..."),
+        }
+    }
+}
+
+impl SensorApp {
+    fn update_data(&mut self) {
+        self.data = match fetch_sensors_data() {
+            Ok(output) => parse_sensors_data(&output),
+            Err(e) => format!("Error: {}", e),
+        };
+    }
+}
+
+#[tokio::main]
+async fn main() -> eframe::Result<()> {
+    let native_options = eframe::NativeOptions::default();
+    eframe::run_native(
+        "Sensor Monitor",
+        native_options,
+        Box::new(|_cc| Box::new(SensorApp::default())),
+    )
+}
+
+impl eframe::App for SensorApp {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            ui.heading("Sensor Data Monitor");
+
+            if ui.button("Refresh").clicked() {
+                self.update_data();
+            }
+
+            ui.label(&self.data);
+
+            // Schedule periodic refreshes
+            ctx.request_repaint_after(Duration::from_secs(5));
+        });
+    }
+}
+
+fn fetch_sensors_data() -> Result<String, String> {
+    let output = Command::new("sensors")
+        .output()
+        .map_err(|e| format!("Failed to execute sensors: {}", e))?;
+
+    Ok(String::from_utf8_lossy(&output.stdout).into_owned())
+}
+
+fn parse_sensors_data(data: &str) -> String {
+    let re = Regex::new(r"(?P<sensor>.+?):\s+\+?(?P<temp>[\d\.]+)°C").unwrap();
+    let mut parsed = String::new();
+
+    for cap in re.captures_iter(data) {
+        let sensor_name = &cap["sensor"];
+        let temperature = &cap["temp"];
+        parsed.push_str(&format!("{}: {}°C\n", sensor_name, temperature));
+    }
+
+    if parsed.is_empty() {
+        String::from("No sensor data found")
+    } else {
+        parsed
+    }
+}
