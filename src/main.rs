@@ -1,4 +1,3 @@
-// main.rs
 use iced::{
     widget::{column, container, horizontal_rule, row, scrollable, text, Column, Space},
     Alignment, Application, Color, Command, Element, Length, Settings, Subscription, Theme
@@ -8,14 +7,13 @@ use regex::Regex;
 use std::process::Command as StdCommand;
 use std::time::Duration;
 
-// Custom theme constants
 const HEADER_COLOR: Color = Color::from_rgb(0.2, 0.2, 0.7);
 const TEXT_COLOR: Color = Color::from_rgb(0.9, 0.9, 0.9);
 const BACKGROUND_COLOR: Color = Color::from_rgb(0.1, 0.1, 0.1);
 const ROW_ALT_COLOR: Color = Color::from_rgb(0.15, 0.15, 0.15);
 const ERROR_COLOR: Color = Color::from_rgb(0.8, 0.2, 0.2);
 
-// Font sizes (converted to u16)
+// Font sizes (converted to u16)-(Also remember to add Body)
 const HEADER_FONT_SIZE: u16 = 24;
 const TITLE_FONT_SIZE: u16 = 30;
 
@@ -213,7 +211,7 @@ impl iced::widget::container::StyleSheet for RowStyle {
     }
 }
 
-// Sensor data reading and parsing functions
+// Sensor data reading and Parsing functions(add the graph too[real-time])
 fn read_sensor_data() -> Result<Vec<SensorSection>, String> {
     let output = StdCommand::new("sensors")
         .output()
