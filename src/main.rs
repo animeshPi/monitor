@@ -7,18 +7,24 @@ use regex::Regex;
 use std::process::Command as StdCommand;
 use std::time::Duration;
 
-const HEADER_COLOR: Color = Color::from_rgb(0.2, 0.2, 0.7);
+const HEADER_COLOR: Color = Color::from_rgb(0.53, 0.81, 0.92);
 const TEXT_COLOR: Color = Color::from_rgb(0.9, 0.9, 0.9);
 const BACKGROUND_COLOR: Color = Color::from_rgb(0.1, 0.1, 0.1);
 const ROW_ALT_COLOR: Color = Color::from_rgb(0.15, 0.15, 0.15);
 const ERROR_COLOR: Color = Color::from_rgb(0.8, 0.2, 0.2);
 
 // Font sizes (converted to u16)-(Also remember to add Body)
-const HEADER_FONT_SIZE: u16 = 24;
-const TITLE_FONT_SIZE: u16 = 30;
+const HEADER_FONT_SIZE: u16 = 18;
 
 fn main() -> iced::Result {
-    SensorViewer::run(Settings::default())
+    SensorViewer::run(Settings {
+        window: iced::window::Settings {
+            size: iced::Size::new(700.0, 900.0), // Use iced::Size::new for the window size
+            resizable: true,  // You can toggle whether the window should be resizable
+            ..Default::default()
+        },
+        ..Default::default()
+    })
 }
 
 #[derive(Debug, Clone)]
@@ -60,7 +66,7 @@ impl Application for SensorViewer {
     }
 
     fn title(&self) -> String {
-        String::from("Sensor Monitor")
+        String::from("Sensory")
     }
 
     fn update(&mut self, message: Message) -> Command<Self::Message> {
@@ -73,15 +79,6 @@ impl Application for SensorViewer {
     }
 
     fn view(&self) -> Element<Message> {
-        let header = row![
-            text("Sensor Monitor")
-                .size(TITLE_FONT_SIZE)
-                .style(TEXT_COLOR),
-            Space::with_width(Length::Fill),
-        ]
-        .align_items(Alignment::Center)
-        .padding(20);
-
         let content = match &self.sensor_data {
             Ok(data) => Column::with_children(
                 data.iter()
@@ -99,7 +96,7 @@ impl Application for SensorViewer {
         };
 
         container(scrollable(
-            column![header, horizontal_rule(2), content.spacing(20)]
+            column![content.spacing(20)]
                 .spacing(20)
                 .padding(20),
         ))
@@ -233,11 +230,14 @@ fn parse_sensor_output(input: &str) -> Result<Vec<SensorSection>, String> {
     let mut current_section: Option<SensorSection> = None;
 
     static ENTRY_REGEX: Lazy<Regex> = Lazy::new(|| {
-        Regex::new(r"(?x)
-            ^(?P<key>\S+?):\s+
-            (?P<value>.+?)
-            (\s+\((?P<info>.+)\))?$")
-            .unwrap()
+        Regex::new(
+            r"(?x)
+            ^(?P<key>.+?):\s+
+            (?P<value>[+-]?\d+\.?\d*\s?(°C|RPM|V|W|%|mA)?)
+            (\s+\((?P<info>.+?)\))?$
+            ",
+        )
+        .unwrap()
     });
 
     for line in input.lines() {
